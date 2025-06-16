@@ -20,8 +20,8 @@ MonoBehaviour:
   - FFFFFFFFFF
   - FFFFFFFFFF
   - FFFFFFFFFF
-  - FFFFFFFFFF
-  - FFFFFFFFFF
+  - FFFFFFFFPF
+  - FFFFFFFFPF
   - FFFFFFFFPF
   - FFFFFFFFPF
   - FFFFFFFFFF
@@ -45,4 +45,4 @@ MonoBehaviour:
     position: {x: 5, y: 5}
   - foodType: 0
     position: {x: 3, y: 5}
-  wormholePosition: {x: 0, y: 0}
+  wormholePosition: {x: 5, y: 8}

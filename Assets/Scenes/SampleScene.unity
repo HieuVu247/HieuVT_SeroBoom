@@ -711,6 +711,7 @@ MonoBehaviour:
   pitTile: {fileID: 11400000, guid: d51d97ae2bb94104bba07fb91e804883, type: 2}
   bananaPrefab: {fileID: 3027173290213614, guid: 5395d69b6dd9b3c4ab6114445cc81480, type: 3}
   rainbowPotionPrefab: {fileID: 4221825248288402681, guid: 45b706d9ccb3f2e48a73f1f22b4555a8, type: 3}
+  wormholePrefab: {fileID: 1563398860555449468, guid: f919346e41413664387db71262e20251, type: 3}
 --- !u!4 &1234363635
 Transform:
   m_ObjectHideFlags: 0
@@ -721,6 +722,50 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.21002503, y: -0.39158678, z: 0.024138726}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1298898915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1298898917}
+  - component: {fileID: 1298898916}
+  m_Layer: 0
+  m_Name: _GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1298898916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298898915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd1e1808e1677df4895234014a1c418a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1298898917
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298898915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.0844789, y: 6.4922705, z: -0.04050948}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -780,3 +825,4 @@ SceneRoots:
   - {fileID: 606353877}
   - {fileID: 949844996}
   - {fileID: 1234363635}
+  - {fileID: 1298898917}

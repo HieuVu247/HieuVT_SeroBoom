@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 using System.Linq;
+using DG.Tweening;
 
 public class SnakeController : MonoBehaviour
 {
@@ -10,12 +11,21 @@ public class SnakeController : MonoBehaviour
     private SnakeVisuals snakeVisuals;
     private LevelManager levelManager;
     private Vector2Int lastTailPosition;
+    private Stack<GameState> history = new Stack<GameState>();
+    
+    private SnakeFaceController faceController;
+    private int droppedFoodCounter = 0;
+    private bool isAnimating = false;
 
     void Awake()
     {
         snakeSegments = new List<Vector2Int>();
         snakeVisuals = GetComponent<SnakeVisuals>();
+        faceController = GetComponent<SnakeFaceController>();
     }
+
+    void OnEnable() { GameEvents.OnFoodDroppedInPit += HandleFoodDropped; }
+    void OnDisable() { GameEvents.OnFoodDroppedInPit -= HandleFoodDropped; }
 
     void Update()
     {
@@ -26,7 +36,10 @@ public class SnakeController : MonoBehaviour
     {
         this.levelManager = manager;
         this.currentDirection = levelData.initialDirection;
+        history.Clear();
         snakeSegments.Clear();
+        droppedFoodCounter = 0;
+        isAnimating = false;
         Vector2Int currentPosition = levelData.snakeStartPosition;
         for (int i = 0; i < levelData.initialSnakeLength; i++)
         {
@@ -35,10 +48,15 @@ public class SnakeController : MonoBehaviour
         }
         if (snakeSegments.Count > 0) { lastTailPosition = snakeSegments[snakeSegments.Count - 1]; }
         snakeVisuals.Initialize(snakeSegments, grid);
+        faceController.SetFace(FaceType.Normal);
+        faceController.UpdateFaceRotation(currentDirection);
     }
 
     private void HandleInput()
     {
+        if (isAnimating) return;
+        if (Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }
+        if (GameManager.Instance.CurrentStatus != GameManager.GameStatus.Playing) return;
         if (Input.GetKeyDown(KeyCode.UpArrow) && currentDirection != Direction.Down) { AttemptMove(Direction.Up); }
         else if (Input.GetKeyDown(KeyCode.DownArrow) && currentDirection != Direction.Up) { AttemptMove(Direction.Down); }
         else if (Input.GetKeyDown(KeyCode.LeftArrow) && currentDirection != Direction.Right) { AttemptMove(Direction.Left); }
@@ -47,114 +65,147 @@ public class SnakeController : MonoBehaviour
     
     private void AttemptMove(Direction direction)
     {
+        faceController.ResetToNormalFace();
         Vector2Int nextHeadPos = snakeSegments[0] + GetVectorForDirection(direction);
-        for (int i = 1; i < snakeSegments.Count; i++)
-        {
-            if (snakeSegments[i] == nextHeadPos) return;
-        }
+        for (int i = 1; i < snakeSegments.Count; i++) { if (snakeSegments[i] == nextHeadPos) return; }
+        if (levelManager.IsWormholeAt(nextHeadPos)) { GameManager.Instance.WinLevel(); return; }
+        
         this.currentDirection = direction;
         FoodItem food = levelManager.GetFoodAt(nextHeadPos);
+        bool hasMoved = false;
         if (food != null)
         {
-            if (food.Push(GetVectorForDirection(currentDirection))) { MoveSnake(); }
-            else { EatFood(food); }
+            SaveState();
+            if (food.Push(GetVectorForDirection(currentDirection))) { MoveSnake(); hasMoved = true; }
+            else { EatFood(food); hasMoved = true; }
         }
-        else if (levelManager.IsPositionWalkable(nextHeadPos)) { MoveSnake(); }
+        else if (levelManager.IsPositionWalkable(nextHeadPos)) 
+        {
+            SaveState();
+            MoveSnake();
+            hasMoved = true;
+        }
+        if(!hasMoved) { }
     }
 
     private void EatFood(FoodItem food)
     {
         Direction moveDirection = this.currentDirection;
         levelManager.RemoveFoodAt(food.gridPosition);
-        if (food.foodType == FoodType.Banana) { Grow(); }
+        if (food.foodType == FoodType.Banana) { Grow(); faceController.SetFace(FaceType.EatBanana); }
+        
         food.Consume();
         MoveSnake();
+
         if (food.foodType == FoodType.RainbowPotion) { ApplyRainbowPush(moveDirection); }
     }
 
     private void ApplyRainbowPush(Direction moveDirection)
     {
+        isAnimating = true;
         Vector2Int pushDirection = GetVectorForDirection(moveDirection) * -1;
         
-        while(true)
+        HashSet<FoodItem> foodChain = new HashSet<FoodItem>();
+        HashSet<Vector2Int> pushablePositions = new HashSet<Vector2Int>(snakeSegments);
+
+        while (true)
         {
-            List<Vector2Int> pushedObjectsPositions = new List<Vector2Int>(snakeSegments);
-            HashSet<FoodItem> foodToPush = new HashSet<FoodItem>();
+            bool newFoodFoundInPass = false;
+            List<FoodItem> newlyFoundFood = new List<FoodItem>();
 
-            bool collisionDetected = false;
-            
-            // Lặp vô hạn để tìm tất cả các đối tượng bị đẩy theo chuỗi
-            while(true)
+            foreach (var pos in pushablePositions)
             {
-                int initialPushedCount = pushedObjectsPositions.Count;
-                List<Vector2Int> nextIterationPushedObjects = new List<Vector2Int>(pushedObjectsPositions);
-
-                foreach (var pos in pushedObjectsPositions)
+                Vector2Int posInFront = pos + pushDirection;
+                if (!pushablePositions.Contains(posInFront))
                 {
-                    Vector2Int nextPos = pos + pushDirection;
-                    FoodItem foodInNextPos = levelManager.GetFoodAt(nextPos);
-                    if(foodInNextPos != null && !foodToPush.Contains(foodInNextPos))
+                    FoodItem food = levelManager.GetFoodAt(posInFront);
+                    if (food != null && !foodChain.Contains(food))
                     {
-                        nextIterationPushedObjects.Add(nextPos);
-                        foodToPush.Add(foodInNextPos);
+                        newlyFoundFood.Add(food);
                     }
                 }
-                
-                pushedObjectsPositions = nextIterationPushedObjects;
-                if(pushedObjectsPositions.Count == initialPushedCount) break;
             }
-            
-            // Kiểm tra xem tất cả các đối tượng bị đẩy có thể di chuyển không
-            foreach (var pos in pushedObjectsPositions)
+
+            if (newlyFoundFood.Count > 0)
             {
-                Vector2Int nextPos = pos + pushDirection;
-                if(levelManager.IsWallAt(nextPos) && !pushedObjectsPositions.Contains(nextPos))
+                foreach (var food in newlyFoundFood)
+                {
+                    foodChain.Add(food);
+                    pushablePositions.Add(food.gridPosition);
+                }
+                newFoodFoundInPass = true;
+            }
+
+            if (!newFoodFoundInPass)
+            {
+                break;
+            }
+        }
+        
+        int pushDistance = 0;
+        while (true)
+        {
+            bool collisionDetected = false;
+            foreach (var pos in pushablePositions)
+            {
+                Vector2Int destination = pos + pushDirection * (pushDistance + 1);
+                if (levelManager.IsWallAt(destination) && !pushablePositions.Contains(destination))
                 {
                     collisionDetected = true;
                     break;
                 }
             }
-
-            if(collisionDetected)
-            {
-                break; // Dừng vòng lặp đẩy chính
-            }
-            
-            // Di chuyển tất cả
-            for(int i = 0; i < snakeSegments.Count; i++) { snakeSegments[i] += pushDirection; }
-            foreach(var food in foodToPush) { food.Push(pushDirection); }
+            if (collisionDetected) { break; }
+            pushDistance++;
         }
-        
-        snakeVisuals.UpdateVisuals();
+
+        if (pushDistance > 0)
+        {
+            for (int i = 0; i < snakeSegments.Count; i++)
+            {
+                snakeSegments[i] += pushDirection * pushDistance;
+            }
+            foreach (var food in foodChain)
+            {
+                Vector2Int oldPos = food.gridPosition;
+                Vector2Int newPos = oldPos + pushDirection * pushDistance;
+                food.gridPosition = newPos;
+                levelManager.UpdateFoodPosition(oldPos, newPos);
+            }
+        }
+
+        Sequence pushSequence = snakeVisuals.CreatePushAnimation();
+        foreach (var food in foodChain)
+        {
+            pushSequence.Join(food.GetMoveTween(food.gridPosition, snakeVisuals.moveDuration));
+        }
+
+        pushSequence.OnComplete(() => {
+            isAnimating = false;
+            snakeVisuals.UpdateVisuals_Instant();
+            faceController.UpdateFaceRotation(this.currentDirection);
+            CheckForDeath();
+        });
     }
 
-    private void Grow()
-    {
-        snakeSegments.Add(lastTailPosition);
-    }
+    private void HandleFoodDropped() { droppedFoodCounter++; if (droppedFoodCounter == 1) { faceController.SetFace(FaceType.FailPush1); } else { faceController.SetFace(FaceType.FailPush2); } }
+    private void Grow() { snakeSegments.Add(lastTailPosition); }
 
     private void MoveSnake()
     {
         if (snakeSegments.Count == 0) return;
         lastTailPosition = snakeSegments[snakeSegments.Count - 1];
         Vector2Int nextHeadPosition = snakeSegments[0] + GetVectorForDirection(currentDirection);
-        for (int i = snakeSegments.Count - 1; i > 0; i--)
-        {
-            snakeSegments[i] = snakeSegments[i - 1];
-        }
+        for (int i = snakeSegments.Count - 1; i > 0; i--) { snakeSegments[i] = snakeSegments[i - 1]; }
         snakeSegments[0] = nextHeadPosition;
-        snakeVisuals.UpdateVisuals();
+        snakeVisuals.UpdateVisuals_Instant();
+        faceController.UpdateFaceRotation(currentDirection);
+        CheckForDeath();
     }
 
-    private Vector2Int GetVectorForDirection(Direction dir)
-    {
-        switch (dir)
-        {
-            case Direction.Up: return Vector2Int.up;
-            case Direction.Down: return Vector2Int.down;
-            case Direction.Left: return Vector2Int.left;
-            case Direction.Right: return Vector2Int.right;
-            default: return Vector2Int.zero;
-        }
-    }
+    private void CheckForDeath() { foreach (var segment in snakeSegments) { if (!levelManager.IsPitAt(segment)) { return; } } faceController.SetFace(FaceType.Fall); GameManager.Instance.LoseLevel(); }
+    private void SaveState() { GameState currentState = new GameState { snakeSegmentPositions = new List<Vector2Int>(snakeSegments), snakeDirection = this.currentDirection, snakeLastTailPosition = this.lastTailPosition, foodStates = levelManager.GetCurrentFoodStates() }; history.Push(currentState); }
+    private void LoadState(GameState state) { this.currentDirection = state.snakeDirection; this.lastTailPosition = state.snakeLastTailPosition; this.snakeSegments = new List<Vector2Int>(state.snakeSegmentPositions); this.droppedFoodCounter = 0; levelManager.LoadFoodState(state.foodStates); snakeVisuals.Initialize(this.snakeSegments, levelManager.grid); faceController.SetFace(FaceType.Normal); faceController.UpdateFaceRotation(currentDirection); }
+    private void Undo() { if (history.Count > 0) { isAnimating = false; LoadState(history.Pop()); GameManager.Instance.StartLevel(); } }
+    private Vector2Int GetVectorForDirection(Direction dir) { switch (dir) { case Direction.Up: return Vector2Int.up; case Direction.Down: return Vector2Int.down; case Direction.Left: return Vector2Int.left; case Direction.Right: return Vector2Int.right; default: return Vector2Int.zero; } }
 }

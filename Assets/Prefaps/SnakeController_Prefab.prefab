@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8273691859145732705}
   - component: {fileID: 3394725394542198911}
   - component: {fileID: 5563335151008546579}
+  - component: {fileID: 8988412328527604996}
   m_Layer: 0
   m_Name: SnakeController_Prefab
   m_TagString: Untagged
@@ -73,3 +74,23 @@ MonoBehaviour:
     BodyCornerTopLeft: {fileID: -6910044838309267634, guid: 37e37cc1dceb89145a5c55fc5362e261, type: 3}
     BodyCornerBottomRight: {fileID: -935821620993086006, guid: 4cf9e208b4059a445ac645ba0b3033c9, type: 3}
     BodyCornerBottomLeft: {fileID: 3131715148774595240, guid: 5ebbdb0681a662e44ac36fb5130a1886, type: 3}
+  moveDuration: 0.5
+  segmentMoveDelay: 0.002
+--- !u!114 &8988412328527604996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3494048893485385368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 836b0c16a29df3141b3b808ee681080e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  faceSpriteSet:
+    Normal: {fileID: 4606157284126940538, guid: 1b74360d5b4576c4f8d79f2f5e9eec7c, type: 3}
+    EatBanana: {fileID: 6857209623859750507, guid: 8647ba615f8c5c344971083a2f3e9218, type: 3}
+    FailPush1: {fileID: 8486320996559874079, guid: 6b71224a330333b4baee825c1295564f, type: 3}
+    FailPush2: {fileID: 6393870943747637959, guid: 7ef0f024cbbf40b4bb2c6868959417ac, type: 3}
+    Fall: {fileID: 21300000, guid: dca932796ea85154b946d508741205cf, type: 3}
