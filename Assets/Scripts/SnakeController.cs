@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 using System.Linq;
-using DG.Tweening;
 
 public class SnakeController : MonoBehaviour
 {
@@ -85,7 +84,7 @@ public class SnakeController : MonoBehaviour
             MoveSnake();
             hasMoved = true;
         }
-        if(!hasMoved) { }
+        if(!hasMoved) { history.Pop(); }
     }
 
     private void EatFood(FoodItem food)
@@ -102,90 +101,34 @@ public class SnakeController : MonoBehaviour
 
     private void ApplyRainbowPush(Direction moveDirection)
     {
-        isAnimating = true;
         Vector2Int pushDirection = GetVectorForDirection(moveDirection) * -1;
         
-        HashSet<FoodItem> foodChain = new HashSet<FoodItem>();
-        HashSet<Vector2Int> pushablePositions = new HashSet<Vector2Int>(snakeSegments);
-
-        while (true)
+        while(true)
         {
-            bool newFoodFoundInPass = false;
-            List<FoodItem> newlyFoundFood = new List<FoodItem>();
-
-            foreach (var pos in pushablePositions)
+            bool canPush = true;
+            foreach (var segment in snakeSegments)
             {
-                Vector2Int posInFront = pos + pushDirection;
-                if (!pushablePositions.Contains(posInFront))
+                Vector2Int nextPos = segment + pushDirection;
+                if (levelManager.IsWallAt(nextPos)) { canPush = false; break; }
+
+                FoodItem food = levelManager.GetFoodAt(nextPos);
+                if (food != null)
                 {
-                    FoodItem food = levelManager.GetFoodAt(posInFront);
-                    if (food != null && !foodChain.Contains(food))
-                    {
-                        newlyFoundFood.Add(food);
-                    }
+                    if (!food.Push(pushDirection)) { canPush = false; break; }
                 }
             }
+            
+            if (!canPush) { break; }
 
-            if (newlyFoundFood.Count > 0)
-            {
-                foreach (var food in newlyFoundFood)
-                {
-                    foodChain.Add(food);
-                    pushablePositions.Add(food.gridPosition);
-                }
-                newFoodFoundInPass = true;
-            }
-
-            if (!newFoodFoundInPass)
-            {
-                break;
-            }
-        }
-        
-        int pushDistance = 0;
-        while (true)
-        {
-            bool collisionDetected = false;
-            foreach (var pos in pushablePositions)
-            {
-                Vector2Int destination = pos + pushDirection * (pushDistance + 1);
-                if (levelManager.IsWallAt(destination) && !pushablePositions.Contains(destination))
-                {
-                    collisionDetected = true;
-                    break;
-                }
-            }
-            if (collisionDetected) { break; }
-            pushDistance++;
-        }
-
-        if (pushDistance > 0)
-        {
             for (int i = 0; i < snakeSegments.Count; i++)
             {
-                snakeSegments[i] += pushDirection * pushDistance;
+                snakeSegments[i] += pushDirection;
             }
-            foreach (var food in foodChain)
-            {
-                Vector2Int oldPos = food.gridPosition;
-                Vector2Int newPos = oldPos + pushDirection * pushDistance;
-                food.gridPosition = newPos;
-                levelManager.UpdateFoodPosition(oldPos, newPos);
-            }
-        }
-
-        Sequence pushSequence = snakeVisuals.CreatePushAnimation();
-        foreach (var food in foodChain)
-        {
-            pushSequence.Join(food.GetMoveTween(food.gridPosition, snakeVisuals.moveDuration));
-        }
-
-        pushSequence.OnComplete(() => {
-            isAnimating = false;
             snakeVisuals.UpdateVisuals_Instant();
             faceController.UpdateFaceRotation(this.currentDirection);
-            CheckForDeath();
-        });
+        }
+        
+        CheckForDeath();
     }
 
     private void HandleFoodDropped() { droppedFoodCounter++; if (droppedFoodCounter == 1) { faceController.SetFace(FaceType.FailPush1); } else { faceController.SetFace(FaceType.FailPush2); } }
