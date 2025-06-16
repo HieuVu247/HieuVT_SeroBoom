@@ -74,7 +74,7 @@ MonoBehaviour:
     BodyCornerTopLeft: {fileID: -6910044838309267634, guid: 37e37cc1dceb89145a5c55fc5362e261, type: 3}
     BodyCornerBottomRight: {fileID: -935821620993086006, guid: 4cf9e208b4059a445ac645ba0b3033c9, type: 3}
     BodyCornerBottomLeft: {fileID: 3131715148774595240, guid: 5ebbdb0681a662e44ac36fb5130a1886, type: 3}
-  moveDuration: 0.5
+  moveDuration: 0.1
   segmentMoveDelay: 0.002
 --- !u!114 &8988412328527604996
 MonoBehaviour:

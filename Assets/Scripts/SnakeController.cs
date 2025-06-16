@@ -1,7 +1,9 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 using System.Linq;
+using DG.Tweening;
 
 public class SnakeController : MonoBehaviour
 {
@@ -71,20 +73,17 @@ public class SnakeController : MonoBehaviour
         
         this.currentDirection = direction;
         FoodItem food = levelManager.GetFoodAt(nextHeadPos);
-        bool hasMoved = false;
         if (food != null)
         {
             SaveState();
-            if (food.Push(GetVectorForDirection(currentDirection))) { MoveSnake(); hasMoved = true; }
-            else { EatFood(food); hasMoved = true; }
+            if (food.Push(GetVectorForDirection(currentDirection))) { MoveSnake(); }
+            else { EatFood(food); }
         }
         else if (levelManager.IsPositionWalkable(nextHeadPos)) 
         {
             SaveState();
             MoveSnake();
-            hasMoved = true;
         }
-        if(!hasMoved) { history.Pop(); }
     }
 
     private void EatFood(FoodItem food)
@@ -96,39 +95,61 @@ public class SnakeController : MonoBehaviour
         food.Consume();
         MoveSnake();
 
-        if (food.foodType == FoodType.RainbowPotion) { ApplyRainbowPush(moveDirection); }
+        if (food.foodType == FoodType.RainbowPotion) { StartCoroutine(ApplyRainbowPushRoutine(moveDirection)); }
     }
 
-    private void ApplyRainbowPush(Direction moveDirection)
+    private IEnumerator ApplyRainbowPushRoutine(Direction moveDirection)
     {
+        isAnimating = true;
         Vector2Int pushDirection = GetVectorForDirection(moveDirection) * -1;
-        
-        while(true)
+
+        while (true)
         {
-            bool canPush = true;
+            bool canPushThisStep = true;
+            HashSet<FoodItem> foodToPushThisStep = new HashSet<FoodItem>();
+
             foreach (var segment in snakeSegments)
             {
                 Vector2Int nextPos = segment + pushDirection;
-                if (levelManager.IsWallAt(nextPos)) { canPush = false; break; }
-
+                if (levelManager.IsWallAt(nextPos))
+                {
+                    canPushThisStep = false;
+                    break;
+                }
                 FoodItem food = levelManager.GetFoodAt(nextPos);
                 if (food != null)
                 {
-                    if (!food.Push(pushDirection)) { canPush = false; break; }
+                    foodToPushThisStep.Add(food);
                 }
             }
-            
-            if (!canPush) { break; }
 
+            if (!canPushThisStep) { break; }
+
+            foreach (var food in foodToPushThisStep)
+            {
+                if (!food.Push(pushDirection))
+                {
+                    canPushThisStep = false;
+                    break;
+                }
+            }
+
+            if (!canPushThisStep) { break; }
+
+            lastTailPosition = snakeSegments.Last();
             for (int i = 0; i < snakeSegments.Count; i++)
             {
                 snakeSegments[i] += pushDirection;
             }
-            snakeVisuals.UpdateVisuals_Instant();
-            faceController.UpdateFaceRotation(this.currentDirection);
+            
+            Sequence stepSequence = snakeVisuals.CreatePushAnimation();
+            yield return stepSequence.WaitForCompletion();
         }
-        
+
+        snakeVisuals.UpdateVisuals_Instant();
+        faceController.UpdateFaceRotation(this.currentDirection);
         CheckForDeath();
+        isAnimating = false;
     }
 
     private void HandleFoodDropped() { droppedFoodCounter++; if (droppedFoodCounter == 1) { faceController.SetFace(FaceType.FailPush1); } else { faceController.SetFace(FaceType.FailPush2); } }
