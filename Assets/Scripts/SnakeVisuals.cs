@@ -36,19 +36,18 @@ public class SnakeVisuals : MonoBehaviour
 
     private List<GameObject> snakeSegmentObjects = new List<GameObject>();
     private List<Vector2Int> segmentPositions;
-    private Tilemap mapTilemap;
+    private Grid grid;
     private Transform visualContainer;
 
-    public void Initialize(List<Vector2Int> initialSegmentPositions, Tilemap targetTilemap)
+    public void Initialize(List<Vector2Int> initialSegmentPositions, Grid targetGrid)
     {
         this.segmentPositions = initialSegmentPositions;
-        this.mapTilemap = targetTilemap;
+        this.grid = targetGrid;
 
         if (visualContainer == null)
         {
             visualContainer = new GameObject("SnakeVisualContainer").transform;
-            // Dòng quan trọng được thêm vào để đồng bộ Grid
-            visualContainer.SetParent(targetTilemap.transform);
+            visualContainer.SetParent(targetGrid.transform);
         }
 
         foreach (var segment in snakeSegmentObjects)
@@ -97,10 +96,14 @@ public class SnakeVisuals : MonoBehaviour
     {
         GameObject segmentObject = snakeSegmentObjects[index];
         Vector2Int currentPos = segmentPositions[index];
-
-        segmentObject.transform.position = mapTilemap.GetCellCenterWorld((Vector3Int)currentPos);
+        
+        segmentObject.transform.position = grid.GetCellCenterWorld((Vector3Int)currentPos);
 
         SpriteRenderer sr = segmentObject.GetComponent<SpriteRenderer>();
+        
+        // THAY ĐỔI LOGIC SORTING Ở ĐÂY
+        sr.sortingOrder = -currentPos.y * 10 + 5;
+
         if (index == 0)
         {
             Vector2Int nextPos = segmentPositions[index + 1];

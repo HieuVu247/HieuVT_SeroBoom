@@ -13,22 +13,36 @@ MonoBehaviour:
   m_Name: Level_01
   m_EditorClassIdentifier: 
   levelName: 
-  gridWidth: 5
-  gridHeight: 5
+  gridWidth: 10
+  gridHeight: 10
   floorLayout:
-  - PPPPP
-  - PFFFP
-  - PFPFP
-  - PFFFP
-  - PPPPP
+  - FFFFFFFFFF
+  - FFFFFFFFFF
+  - FFFFFFFFFF
+  - FFFFFFFFFF
+  - FFFFFFFFFF
+  - FFFFFFFFFF
+  - FFFFFFFFPF
+  - FFFFFFFFPF
+  - FFFFFFFFFF
+  - FFFFFFFFFF
   wallLayout:
-  - WWWWW
-  - 'W...W '
-  - 'W.W.W '
-  - 'W...W '
-  - WWWWW
-  snakeStartPosition: {x: 2, y: 2}
-  initialSnakeLength: 5
+  - WWWWWWWWWW
+  - W........W
+  - W........W
+  - W........W
+  - W........W
+  - W........W
+  - W........W
+  - W.........
+  - W.........
+  - WWWWWWWWWW
+  snakeStartPosition: {x: 4, y: 4}
+  initialSnakeLength: 3
   initialDirection: 0
-  foodPlacements: []
+  foodPlacements:
+  - foodType: 1
+    position: {x: 5, y: 5}
+  - foodType: 0
+    position: {x: 3, y: 5}
   wormholePosition: {x: 0, y: 0}
