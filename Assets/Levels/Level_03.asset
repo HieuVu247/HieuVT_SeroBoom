@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3df75e78fae861d4f8915bf5a43545cb, type: 3}
+  m_Name: Level_03
+  m_EditorClassIdentifier: 
+  levelName: Level_03
+  gridWidth: 21
+  gridHeight: 15
+  floorLayout:
+  - PPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPP
+  - PPPFFFFFFPPPPPPPPPPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPFFFFFPPP
+  - PPPFFFFFFPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPP
+  wallLayout:
+  - .....................
+  - .....................
+  - .....................
+  - ...WW..WW............
+  - ...W....W............
+  - ...W.............W...
+  - ...WW............W...
+  - ...WW............W...
+  - ...WW............W...
+  - ...W.............W...
+  - ...W....W............
+  - ...WW..WW............
+  - .....................
+  - .....................
+  - .....................
+  snakeStartPosition: {x: 14, y: 7}
+  initialSnakeLength: 3
+  initialDirection: 2
+  foodPlacements:
+  - foodType: 0
+    position: {x: 4, y: 4}
+  - foodType: 0
+    position: {x: 7, y: 4}
+  - foodType: 0
+    position: {x: 5, y: 7}
+  - foodType: 0
+    position: {x: 4, y: 10}
+  - foodType: 0
+    position: {x: 7, y: 10}
+  - foodType: 1
+    position: {x: 15, y: 8}
+  wormholePosition: {x: 15, y: 6}

@@ -12,37 +12,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3df75e78fae861d4f8915bf5a43545cb, type: 3}
   m_Name: Level_01
   m_EditorClassIdentifier: 
-  levelName: 
-  gridWidth: 10
-  gridHeight: 10
+  levelName: Level_01
+  gridWidth: 24
+  gridHeight: 16
   floorLayout:
-  - FFFFFFFFFF
-  - FFFFFFFFFF
-  - FFFFFFFFFF
-  - FFFFFFFFFF
-  - FFFFFFFFPF
-  - FFFFFFFFPF
-  - FFFFFFFFPF
-  - FFFFFFFFPF
-  - FFFFFFFFFF
-  - FFFFFFFFFF
+  - PPPPPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPFFFFFPPP
+  - PPPFFFFFFFPPPPFFFFFFFPPP
+  - PPPFFFFFFFPPPPFFFFFFFPPP
+  - PPPFFFFFFFPPPPFFFFFFFPPP
+  - PPPFFFFFFFPPPPFFFFFFFPPP
+  - PPPFFFFFFFPPPPFFFFFFFPPP
+  - PPPPPPPPPPPPPPPPFFFFFPPP
+  - PPPPPPPPPPPPPPPPFFFFFPPP
+  - PPPPPPPPPPPPPPPPFFFFFPPP
+  - PPPPPPPPPPPPPPPPFFFFFPPP
+  - PPPPPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPPPPP
+  - PPPPPPPPPPPPPPPPPPPPPPPP
   wallLayout:
-  - WWWWWWWWWW
-  - W........W
-  - W........W
-  - W........W
-  - W........W
-  - W........W
-  - W........W
-  - W.........
-  - W.........
-  - WWWWWWWWWW
-  snakeStartPosition: {x: 4, y: 4}
+  - ........................
+  - ........................
+  - ........................
+  - ........................
+  - ...................W....
+  - ....W..............W....
+  - ....W..............W....
+  - ....W..............W....
+  - ...................W....
+  - ........................
+  - ........................
+  - ........................
+  - ........................
+  - ........................
+  - ........................
+  - ........................
+  snakeStartPosition: {x: 15, y: 7}
   initialSnakeLength: 3
   initialDirection: 0
   foodPlacements:
   - foodType: 1
     position: {x: 5, y: 5}
-  - foodType: 0
-    position: {x: 3, y: 5}
-  wormholePosition: {x: 5, y: 8}
+  - foodType: 1
+    position: {x: 18, y: 5}
+  - foodType: 1
+    position: {x: 16, y: 7}
+  - foodType: 1
+    position: {x: 5, y: 7}
+  wormholePosition: {x: 18, y: 11}
