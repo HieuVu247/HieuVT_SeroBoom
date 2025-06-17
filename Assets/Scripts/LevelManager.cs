@@ -12,6 +12,7 @@ public class LevelManager : MonoBehaviour
     public Grid grid;
     public GameObject tilemapPrefab;
     public GameObject snakeControllerPrefab;
+    public UIManager uiManager;
 
     [Header("Tile Assets")]
     public TileBase floorTileA;
@@ -32,7 +33,7 @@ public class LevelManager : MonoBehaviour
 
     void Start()
     {
-        GenerateLevel();
+        //GenerateLevel();
     }
 
     void Update()
@@ -64,6 +65,9 @@ public class LevelManager : MonoBehaviour
         GameObject snakeInstance = Instantiate(snakeControllerPrefab, Vector3.zero, Quaternion.identity);
         snakeController = snakeInstance.GetComponent<SnakeController>();
         snakeController.Initialize(currentLevelData, grid, this);
+        
+        uiManager.SetSnakeController(snakeController);
+
         GameManager.Instance.StartLevel();
     }
 

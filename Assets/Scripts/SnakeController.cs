@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 using System.Linq;
 using DG.Tweening;
+using UnityEngine.InputSystem;
 
 public class SnakeController : MonoBehaviour
 {
     private List<Vector2Int> snakeSegments;
     private Direction currentDirection;
     private SnakeVisuals snakeVisuals;
-    private LevelManager levelManager;
+    private LevelManager _levelManager;
     private Vector2Int lastTailPosition;
     private Stack<GameState> history = new Stack<GameState>();
-    
+
     private SnakeFaceController faceController;
     private int droppedFoodCounter = 0;
     private bool isAnimating = false;
@@ -28,14 +29,9 @@ public class SnakeController : MonoBehaviour
     void OnEnable() { GameEvents.OnFoodDroppedInPit += HandleFoodDropped; }
     void OnDisable() { GameEvents.OnFoodDroppedInPit -= HandleFoodDropped; }
 
-    void Update()
-    {
-        HandleInput();
-    }
-
     public void Initialize(LevelData levelData, Grid grid, LevelManager manager)
     {
-        this.levelManager = manager;
+        this._levelManager = manager;
         this.currentDirection = levelData.initialDirection;
         history.Clear();
         snakeSegments.Clear();
@@ -53,45 +49,76 @@ public class SnakeController : MonoBehaviour
         faceController.UpdateFaceRotation(currentDirection);
     }
 
-    private void HandleInput()
+    public void OnMove(InputAction.CallbackContext context)
     {
-        if (isAnimating) return;
-        if (Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }
-        if (GameManager.Instance.CurrentStatus != GameManager.GameStatus.Playing) return;
-        if (Input.GetKeyDown(KeyCode.UpArrow) && currentDirection != Direction.Down) { AttemptMove(Direction.Up); }
-        else if (Input.GetKeyDown(KeyCode.DownArrow) && currentDirection != Direction.Up) { AttemptMove(Direction.Down); }
-        else if (Input.GetKeyDown(KeyCode.LeftArrow) && currentDirection != Direction.Right) { AttemptMove(Direction.Left); }
-        else if (Input.GetKeyDown(KeyCode.RightArrow) && currentDirection != Direction.Left) { AttemptMove(Direction.Right); }
+        if (!context.performed || isAnimating || GameManager.Instance.CurrentStatus != GameManager.GameStatus.Playing) return;
+
+        Vector2 moveVector = context.ReadValue<Vector2>();
+
+        if (Mathf.Abs(moveVector.x) > 0.5f)
+        {
+            if (moveVector.x > 0.5f && currentDirection != Direction.Left) AttemptMove(Direction.Right);
+            else if (moveVector.x < -0.5f && currentDirection != Direction.Right) AttemptMove(Direction.Left);
+        }
+        else if (Mathf.Abs(moveVector.y) > 0.5f)
+        {
+            if (moveVector.y > 0.5f && currentDirection != Direction.Down) AttemptMove(Direction.Up);
+            else if (moveVector.y < -0.5f && currentDirection != Direction.Up) AttemptMove(Direction.Down);
+        }
     }
-    
-    private void AttemptMove(Direction direction)
+
+    public void OnUndo(InputAction.CallbackContext context)
+    {
+        if (!context.performed) return;
+        Undo();
+    }
+
+    public void OnRestart(InputAction.CallbackContext context)
+    {
+        if (!context.performed || _levelManager == null) return;
+        _levelManager.GenerateLevel();
+    }
+
+    public void AttemptMove(Direction direction)
     {
         faceController.ResetToNormalFace();
         Vector2Int nextHeadPos = snakeSegments[0] + GetVectorForDirection(direction);
         for (int i = 1; i < snakeSegments.Count; i++) { if (snakeSegments[i] == nextHeadPos) return; }
-        if (levelManager.IsWormholeAt(nextHeadPos)) { GameManager.Instance.WinLevel(); return; }
-        
+        if (_levelManager.IsWormholeAt(nextHeadPos)) { GameManager.Instance.WinLevel(); return; }
+
         this.currentDirection = direction;
-        FoodItem food = levelManager.GetFoodAt(nextHeadPos);
+        FoodItem food = _levelManager.GetFoodAt(nextHeadPos);
         if (food != null)
         {
             SaveState();
             if (food.Push(GetVectorForDirection(currentDirection))) { MoveSnake(); }
             else { EatFood(food); }
         }
-        else if (levelManager.IsPositionWalkable(nextHeadPos)) 
+        else if (_levelManager.IsPositionWalkable(nextHeadPos))
         {
             SaveState();
             MoveSnake();
         }
     }
 
+    public void Undo()
+    {
+        if (history.Count > 0)
+        {
+            isAnimating = false;
+            LoadState(history.Pop());
+            GameManager.Instance.StartLevel();
+        }
+    }
+    
     private void EatFood(FoodItem food)
     {
-        Direction moveDirection = this.currentDirection;
-        levelManager.RemoveFoodAt(food.gridPosition);
-        if (food.foodType == FoodType.Banana) { Grow(); faceController.SetFace(FaceType.EatBanana); }
+        AudioManager.Instance.PlaySFX("SnakeEat");
         
+        Direction moveDirection = this.currentDirection;
+        _levelManager.RemoveFoodAt(food.gridPosition);
+        if (food.foodType == FoodType.Banana) { Grow(); faceController.SetFace(FaceType.EatBanana); }
+
         food.Consume();
         MoveSnake();
 
@@ -111,12 +138,12 @@ public class SnakeController : MonoBehaviour
             foreach (var segment in snakeSegments)
             {
                 Vector2Int nextPos = segment + pushDirection;
-                if (levelManager.IsWallAt(nextPos))
+                if (_levelManager.IsWallAt(nextPos))
                 {
                     canPushThisStep = false;
                     break;
                 }
-                FoodItem food = levelManager.GetFoodAt(nextPos);
+                FoodItem food = _levelManager.GetFoodAt(nextPos);
                 if (food != null)
                 {
                     foodToPushThisStep.Add(food);
@@ -125,9 +152,9 @@ public class SnakeController : MonoBehaviour
 
             if (!canPushThisStep) { break; }
 
-            foreach (var food in foodToPushThisStep)
+            foreach (var foodItem in foodToPushThisStep)
             {
-                if (!food.Push(pushDirection))
+                if (!foodItem.Push(pushDirection))
                 {
                     canPushThisStep = false;
                     break;
@@ -141,7 +168,7 @@ public class SnakeController : MonoBehaviour
             {
                 snakeSegments[i] += pushDirection;
             }
-            
+
             Sequence stepSequence = snakeVisuals.CreatePushAnimation();
             yield return stepSequence.WaitForCompletion();
         }
@@ -157,6 +184,8 @@ public class SnakeController : MonoBehaviour
 
     private void MoveSnake()
     {
+        AudioManager.Instance.PlaySFX("SnakeMove");
+        
         if (snakeSegments.Count == 0) return;
         lastTailPosition = snakeSegments[snakeSegments.Count - 1];
         Vector2Int nextHeadPosition = snakeSegments[0] + GetVectorForDirection(currentDirection);
@@ -167,9 +196,8 @@ public class SnakeController : MonoBehaviour
         CheckForDeath();
     }
 
-    private void CheckForDeath() { foreach (var segment in snakeSegments) { if (!levelManager.IsPitAt(segment)) { return; } } faceController.SetFace(FaceType.Fall); GameManager.Instance.LoseLevel(); }
-    private void SaveState() { GameState currentState = new GameState { snakeSegmentPositions = new List<Vector2Int>(snakeSegments), snakeDirection = this.currentDirection, snakeLastTailPosition = this.lastTailPosition, foodStates = levelManager.GetCurrentFoodStates() }; history.Push(currentState); }
-    private void LoadState(GameState state) { this.currentDirection = state.snakeDirection; this.lastTailPosition = state.snakeLastTailPosition; this.snakeSegments = new List<Vector2Int>(state.snakeSegmentPositions); this.droppedFoodCounter = 0; levelManager.LoadFoodState(state.foodStates); snakeVisuals.Initialize(this.snakeSegments, levelManager.grid); faceController.SetFace(FaceType.Normal); faceController.UpdateFaceRotation(currentDirection); }
-    private void Undo() { if (history.Count > 0) { isAnimating = false; LoadState(history.Pop()); GameManager.Instance.StartLevel(); } }
+    private void CheckForDeath() { foreach (var segment in snakeSegments) { if (!_levelManager.IsPitAt(segment)) { return; } } faceController.SetFace(FaceType.Fall); GameManager.Instance.LoseLevel(); }
+    private void SaveState() { GameState currentState = new GameState { snakeSegmentPositions = new List<Vector2Int>(snakeSegments), snakeDirection = this.currentDirection, snakeLastTailPosition = this.lastTailPosition, foodStates = _levelManager.GetCurrentFoodStates() }; history.Push(currentState); }
+    private void LoadState(GameState state) { this.currentDirection = state.snakeDirection; this.lastTailPosition = state.snakeLastTailPosition; this.snakeSegments = new List<Vector2Int>(state.snakeSegmentPositions); this.droppedFoodCounter = 0; _levelManager.LoadFoodState(state.foodStates); snakeVisuals.Initialize(this.snakeSegments, _levelManager.grid); faceController.SetFace(FaceType.Normal); faceController.UpdateFaceRotation(currentDirection); }
     private Vector2Int GetVectorForDirection(Direction dir) { switch (dir) { case Direction.Up: return Vector2Int.up; case Direction.Down: return Vector2Int.down; case Direction.Left: return Vector2Int.left; case Direction.Right: return Vector2Int.right; default: return Vector2Int.zero; } }
 }
